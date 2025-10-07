@@ -43,18 +43,47 @@ def eval_and_save(model, X_test, y_test, label_encoder, outdir="figures", prefix
 
 train_df = pd.read_csv("train_70_6+t.csv")
 test_df  = pd.read_csv("test_30_6+t.csv")
-
 class ProbaWrapper:
-    def __init__(self, model, T=1.0):
-        self.m = model   
-        self.T = T      
+    def __init__(self, model, T: float = 1.0, apply_softmax="auto"):
+        self.m = model
+        self.T = T
+        self.apply_softmax = apply_softmax
+
+    def _maybe_scale(self, X):
+        if hasattr(self.m, "_train_scaler") and self.m._train_scaler is not None:
+            return self.m._train_scaler.transform(X)
+        return X
+
+    @staticmethod
+    def _looks_like_probabilities(arr: np.ndarray, atol=1e-3) -> bool:
+        if arr.ndim != 2:
+            return False
+        nonneg = np.all(arr >= -1e-8)
+        rowsum1 = np.allclose(arr.sum(axis=1), 1.0, atol=atol)
+        return bool(nonneg and rowsum1)
 
     def predict_proba(self, X):
         if hasattr(self.m, "predict_proba"):
             return self.m.predict_proba(X)
-        preds = self.m.predict(X, verbose=0) if hasattr(self.m, "predict") else self.m(X, training=False).numpy()
-        import tensorflow as tf
-        return tf.nn.softmax(preds / self.T).numpy()
+
+        Xs = self._maybe_scale(X)
+        if hasattr(self.m, "predict"):
+            out = self.m.predict(Xs, verbose=0)
+        else:
+            out = self.m(Xs, training=False).numpy()
+
+        out = np.asarray(out)
+
+        if self.apply_softmax == "auto":
+            if self._looks_like_probabilities(out):
+                return out  
+            out = out / float(self.T)
+            return tf.nn.softmax(out, axis=1).numpy()
+        elif self.apply_softmax is True:
+            out = out / float(self.T)
+            return tf.nn.softmax(out, axis=1).numpy()
+        else:
+            return out
     
 
 WINDOW_LEN = 120
@@ -85,7 +114,7 @@ dt  = train_decision_tree(X_train, y_train)
 rf  = train_random_forest(X_train, y_train)
 knn = train_knn(X_train, y_train)
 mlp = train_mlp_keras(X_train, y_train, n_classes)  
-mlp_for_roc = ProbaWrapper(mlp)
+mlp_for_roc = ProbaWrapper(mlp, T=1.0, apply_softmax="auto")
 
 eval_and_save(mlp, X_test, y_test, le, prefix="mlp_keras")
 
