@@ -1,5 +1,9 @@
 # TruckIDMe
 ```
+
+
+New scripts added : D_tree_new_use.py, Random_forest_new.py, Knn_new.py, MLP_new.py, comparision_models.py, plotter.py
+
 TruckIDMe/
 │
 ├── SCRIPTS/
