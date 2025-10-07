@@ -17,4 +17,6 @@ TruckIDMe/
 ├── Whole process.docx # Project documentation file
 ├── README.md # Project overview (this file)
 
+Zip file: figures contains classification report, confusion matrices and combined ROC diagrams of four ML models above
+
 ```
