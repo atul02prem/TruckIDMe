@@ -12,5 +12,5 @@ TruckIDMe/
 │
 ├── Whole process.docx # Project documentation file
 ├── README.md # Project overview (this file)
-└── .gitignore # Ignored files and folders
+
 ```
